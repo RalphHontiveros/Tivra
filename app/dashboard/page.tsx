@@ -2,13 +2,18 @@
 
 import { Navbar } from "@/components/navbar"
 import { useUser } from "@clerk/nextjs"
+import { useBoards } from "@/lib/hooks/userBoards"
+import { Button } from "@/components/ui/button"
+import { Plus } from "lucide-react"
+
+// https://sincere-peacock-82.clerk.accounts.dev
 
 export default function Dashboard() {
   const { user } = useUser()
-  const {CreateBoard} = useBoards()
+  const {createBoard} = useBoards()
 
   const handleCreateBoard = async () => {
-    await CreateBoard()
+    await createBoard({ title: "New Board" });
   }
 
   return (
