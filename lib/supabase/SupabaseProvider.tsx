@@ -1,54 +1,54 @@
-import { useSession } from "@clerk/nextjs"
-import { SupabaseClient, createClient } from "@supabase/supabase-js" 
-import { useEffect, useState, createContext, useContext } from "react"
+"use client";
 
+import { createContext, useContext, useEffect, useState } from "react";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { useSession } from "@clerk/nextjs";
 
-type SupabaseContextType = {
-    supabase: SupabaseClient | null;
-    isLoaded: boolean;
+type SupabaseContext = {
+  supabase: SupabaseClient | null;
+  isLoaded: boolean;
 };
 const Context = createContext<SupabaseContext>({
-    supabese: null,
-    isLoaded: false,
+  supabase: null,
+  isLoaded: false,
 });
 
 export default function SupabaseProvider({
-    children,
-}: { 
-    children: React.ReactNode;
+  children,
+}: {
+  children: React.ReactNode;
 }) {
-    const {session} = useSession()
-    const [supabase, setSupabase] = useState<SupabaseClient | null>(null)
-    const [isLoaded, setIsLoaded] = useState<boolean>(false)
+  const { session } = useSession();
+  const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
+  const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
-    useEffect(() => {
-        if (!session) return
-        const client = createClient(
-             process.env.NEXT_PUBLIC_SUPABASE_URL!,
-             process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-             {
-                accessToken: async () => session?.getToken() ?? null,
-             }
-        );
-
-        setSupabase(client);
-        setIsLoaded(true);
-    }, [session]);
-
-    return (
-    <Context.Provider value={{supabase, isLoaded}}>
-        {isLoaded ? <div> Loading...</div> :children}
-        </Context.Provider>
+  useEffect(() => {
+    if (!session) return;
+    const client = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        accessToken: () => session?.getToken(),
+      }
     );
-}
 
+    setSupabase(client);
+    setIsLoaded(true);
+  }, [session]);
+
+  return (
+    <Context.Provider value={{ supabase, isLoaded }}>
+      {/* {!isLoaded ? <div> Loading...</div> : children} */}
+      {children}
+    </Context.Provider>
+  );
+}
 
 export const useSupabase = () => {
-    const context = useContext(Context)
-    if (context === undefined) {
-        throw new Error("useSupabase must be used within a SupabaseProvider");
-    }
+  const context = useContext(Context);
+  if (context === undefined) {
+    throw new Error("useSupabase needs to be inside the provider");
+  }
 
-    return
-}
-    
+  return context;
+};
