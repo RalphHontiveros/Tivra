@@ -182,6 +182,11 @@ export const boardDataService = {
       columnsWithTasks,
     };
   },
+  async deleteBoard(supabase: SupabaseClient, boardId: string): Promise<void> {
+    const { error } = await supabase.from("boards").delete().eq("id", boardId);
+
+    if (error) throw error;
+  },
 
   async createBoardWithDefaultColumns(
     supabase: SupabaseClient,

@@ -17,6 +17,7 @@ export function useBoards() {
   const [boards, setBoards] = useState<Board[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
 
   useEffect(() => {
     if (user) {
@@ -60,7 +61,20 @@ export function useBoards() {
     }
   }
 
-  return { boards, loading, error, createBoard };
+  async function deleteBoard(boardId: string) {
+    if (!user) throw new Error("User not authenticated");
+
+    try {
+      await boardDataService.deleteBoard(supabase!, boardId);
+
+      // Remove board from local state
+      setBoards((prev) => prev.filter((b) => b.id !== boardId));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete board.");
+    }
+  }
+
+  return { boards, loading, error, createBoard, deleteBoard };
 }
 
 export function useBoard(boardId: string) {

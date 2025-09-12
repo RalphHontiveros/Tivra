@@ -29,13 +29,14 @@ import {
   Rocket,
   Search,
   ListTodo,
+  Trash2,
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
 export default function DashboardPage() {
   const { user } = useUser();
-  const { createBoard, boards, loading, error } = useBoards();
+  const { createBoard, deleteBoard, boards, loading, error } = useBoards();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [isFilterOpen, setIsFilterOpen] = useState<boolean>(false);
 
@@ -213,8 +214,11 @@ export default function DashboardPage() {
           ) : viewMode === "grid" ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
               {filteredBoards.map((board, key) => (
-                <Link href={`/boards/${board.id}`} key={key}>
-                  <Card className="hover:shadow-lg transition-shadow cursor-pointer group">
+                <Card
+                  key={key}
+                  className="hover:shadow-lg transition-shadow group relative"
+                >
+                  <Link href={`/boards/${board.id}`}>
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
                         <div className={`w-4 h-4 ${board.color} rounded`} />
@@ -231,20 +235,24 @@ export default function DashboardPage() {
                         {board.description}
                       </CardDescription>
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs text-gray-500 space-y-1 sm:space-y-0">
-                        <span>
-                          Created{" "}
-                          {new Date(board.created_at).toLocaleDateString()}
-                        </span>
-                        <span>
-                          Updated{" "}
-                          {new Date(board.updated_at).toLocaleDateString()}
-                        </span>
+                        <span>Created {new Date(board.created_at).toLocaleDateString()}</span>
+                        <span>Updated {new Date(board.updated_at).toLocaleDateString()}</span>
                       </div>
                     </CardContent>
-                  </Card>
-                </Link>
-              ))}
+                  </Link>
 
+                  {/* Delete button (absolute top-right) */}
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault(); // Prevent navigating into board
+                      deleteBoard(board.id);
+                    }}
+                    className="absolute top-2 right-2 p-1 rounded hover:bg-red-100"
+                  >
+                    <Trash2 className="h-4 w-4 text-red-500" />
+                  </button>
+                </Card>
+              ))}
               <Card
                 onClick={handleCreateBoard}
                 className="border-2 border-dashed border-gray-300 hover:border-blue-400 transition-colors cursor-pointer group"
