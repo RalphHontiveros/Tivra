@@ -30,13 +30,15 @@ import {
   Search,
   ListTodo,
   Trash2,
+  Archive,
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
 export default function DashboardPage() {
   const { user } = useUser();
-  const { createBoard, deleteBoard, boards, loading, error } = useBoards();
+  const { createBoard, deleteBoard, archiveBoard, boards, loading, error } =
+    useBoards();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [isFilterOpen, setIsFilterOpen] = useState<boolean>(false);
 
@@ -235,16 +237,31 @@ export default function DashboardPage() {
                         {board.description}
                       </CardDescription>
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs text-gray-500 space-y-1 sm:space-y-0">
-                        <span>Created {new Date(board.created_at).toLocaleDateString()}</span>
-                        <span>Updated {new Date(board.updated_at).toLocaleDateString()}</span>
+                        <span>
+                          Created {new Date(board.created_at).toLocaleDateString()}
+                        </span>
+                        <span>
+                          Updated {new Date(board.updated_at).toLocaleDateString()}
+                        </span>
                       </div>
                     </CardContent>
                   </Link>
 
+                  {/* Archive button (absolute top-left) */}
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      archiveBoard(board.id, true);
+                    }}
+                    className="absolute top-2 left-2 p-1 rounded hover:bg-yellow-100"
+                  >
+                    <Archive className="h-4 w-4 text-yellow-600" />
+                  </button>
+
                   {/* Delete button (absolute top-right) */}
                   <button
                     onClick={(e) => {
-                      e.preventDefault(); // Prevent navigating into board
+                      e.preventDefault();
                       deleteBoard(board.id);
                     }}
                     className="absolute top-2 right-2 p-1 rounded hover:bg-red-100"
@@ -270,7 +287,7 @@ export default function DashboardPage() {
               {boards.map((board, key) => (
                 <div key={key} className={key > 0 ? "mt-4" : ""}>
                   <Link href={`/boards/${board.id}`}>
-                    <Card className="hover:shadow-lg transition-shadow cursor-pointer group">
+                    <Card className="hover:shadow-lg transition-shadow cursor-pointer group relative">
                       <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
                           <div className={`w-4 h-4 ${board.color} rounded`} />
@@ -288,15 +305,35 @@ export default function DashboardPage() {
                         </CardDescription>
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs text-gray-500 space-y-1 sm:space-y-0">
                           <span>
-                            Created{" "}
-                            {new Date(board.created_at).toLocaleDateString()}
+                            Created {new Date(board.created_at).toLocaleDateString()}
                           </span>
                           <span>
-                            Updated{" "}
-                            {new Date(board.updated_at).toLocaleDateString()}
+                            Updated {new Date(board.updated_at).toLocaleDateString()}
                           </span>
                         </div>
                       </CardContent>
+
+                      {/* Archive & Delete buttons (top-right in list view) */}
+                      <div className="flex items-center space-x-2 absolute top-2 right-2">
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            archiveBoard(board.id,true);
+                          }}
+                          className="p-1 rounded hover:bg-yellow-100"
+                        >
+                          <Archive className="h-4 w-4 text-yellow-600" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            deleteBoard(board.id);
+                          }}
+                          className="p-1 rounded hover:bg-red-100"
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </button>
+                      </div>
                     </Card>
                   </Link>
                 </div>

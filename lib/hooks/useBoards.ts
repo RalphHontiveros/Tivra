@@ -8,7 +8,7 @@ import {
   taskService,
 } from "../services";
 import { useEffect, useState } from "react";
-import { Board, Column, ColumnWithTasks, Task } from "../supabase/models";
+import { Board, ColumnWithTasks, Task } from "../supabase/models";
 import { useSupabase } from "../supabase/SupabaseProvider";
 
 export function useBoards() {
@@ -17,7 +17,6 @@ export function useBoards() {
   const [boards, setBoards] = useState<Board[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
 
   useEffect(() => {
     if (user) {
@@ -61,6 +60,24 @@ export function useBoards() {
     }
   }
 
+  async function archiveBoard(boardId: string, archived: boolean) {
+    if (!user) throw new Error("User not authenticated");
+
+    try {
+      await boardService.archiveBoard(supabase!, boardId, archived);
+
+      if (archived) {
+        // Remove archived board from active list
+        setBoards((prev) => prev.filter((b) => b.id !== boardId));
+      } else {
+        // Reload if unarchived
+        await loadBoards();
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to archive board.");
+    }
+  }
+
   async function deleteBoard(boardId: string) {
     if (!user) throw new Error("User not authenticated");
 
@@ -74,7 +91,14 @@ export function useBoards() {
     }
   }
 
-  return { boards, loading, error, createBoard, deleteBoard };
+  return {
+    boards,
+    loading,
+    error,
+    createBoard,
+    deleteBoard,
+    archiveBoard,
+  };
 }
 
 export function useBoard(boardId: string) {
@@ -234,7 +258,7 @@ export function useBoard(boardId: string) {
 
       return updatedColumn;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create column.");
+      setError(err instanceof Error ? err.message : "Failed to update column.");
     }
   }
 

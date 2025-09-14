@@ -10,7 +10,6 @@ export const boardService = {
       .single();
 
     if (error) throw error;
-
     return data;
   },
 
@@ -22,8 +21,23 @@ export const boardService = {
       .order("created_at", { ascending: false });
 
     if (error) throw error;
-
     return data || [];
+  },
+
+  async archiveBoard(
+    supabase: SupabaseClient,
+    boardId: string,
+    archived: boolean
+  ): Promise<Board> {
+    const { data, error } = await supabase
+      .from("boards")
+      .update({ is_archived: archived, updated_at: new Date().toISOString() })
+      .eq("id", boardId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
   },
 
   async createBoard(
@@ -37,7 +51,6 @@ export const boardService = {
       .single();
 
     if (error) throw error;
-
     return data;
   },
 
@@ -70,7 +83,6 @@ export const columnService = {
       .order("sort_order", { ascending: true });
 
     if (error) throw error;
-
     return data || [];
   },
 
@@ -85,7 +97,6 @@ export const columnService = {
       .single();
 
     if (error) throw error;
-
     return data;
   },
 
@@ -123,7 +134,6 @@ export const taskService = {
       .order("sort_order", { ascending: true });
 
     if (error) throw error;
-
     return data || [];
   },
 
@@ -138,7 +148,6 @@ export const taskService = {
       .single();
 
     if (error) throw error;
-
     return data;
   },
 
@@ -182,9 +191,9 @@ export const boardDataService = {
       columnsWithTasks,
     };
   },
+
   async deleteBoard(supabase: SupabaseClient, boardId: string): Promise<void> {
     const { error } = await supabase.from("boards").delete().eq("id", boardId);
-
     if (error) throw error;
   },
 
@@ -202,6 +211,7 @@ export const boardDataService = {
       description: boardData.description || null,
       color: boardData.color || "bg-blue-500",
       user_id: boardData.userId,
+      is_archived: false,
     });
 
     const defaultColumns = [
