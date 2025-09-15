@@ -220,16 +220,33 @@ export default function DashboardPage() {
                 <Archive className="mr-2 h-4 w-4" />
                 Archived
               </Button>
-              <Dialog open={isArchiveOpen} onOpenChange={setIsArchiveOpen}>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Archived Boards</DialogTitle>
-                  </DialogHeader>
-                  {/* archivedBoards list here */}
-                </DialogContent>
-              </Dialog>
 
-
+                <Dialog open={isArchiveOpen} onOpenChange={setIsArchiveOpen}>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Archived Boards</DialogTitle>
+                    </DialogHeader>
+                    {archivedBoards.length === 0 ? (
+                      <div className="text-gray-500">No archived boards.</div>
+                    ) : (
+                      <div className="space-y-4">
+                        {archivedBoards.map((board) => (
+                          <Card key={board.id}>
+                            <CardHeader>
+                              <CardTitle>{board.title}</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <CardDescription>{board.description}</CardDescription>
+                              <div className="text-xs text-gray-500">
+                                Archived on {new Date(board.updated_at).toLocaleDateString()}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </DialogContent>
+                </Dialog>
               {/* Create */}
               <Button onClick={handleCreateBoard}>
                 <Plus className="mr-2 h-4 w-4" />
