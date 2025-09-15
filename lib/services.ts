@@ -1,6 +1,8 @@
-import { Board, Column, Task } from "./supabase/models";
+// ─── Imports ──────────────────────────────────────────────
 import { SupabaseClient } from "@supabase/supabase-js";
+import { Board, Column, Task } from "./supabase/models";
 
+// ─── Board Service ────────────────────────────────────────
 export const boardService = {
   async getBoard(supabase: SupabaseClient, boardId: string): Promise<Board> {
     const { data, error } = await supabase
@@ -31,7 +33,10 @@ export const boardService = {
   ): Promise<Board> {
     const { data, error } = await supabase
       .from("boards")
-      .update({ is_archived: archived, updated_at: new Date().toISOString() })
+      .update({
+        is_archived: archived,
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", boardId)
       .select()
       .single();
@@ -61,7 +66,10 @@ export const boardService = {
   ): Promise<Board> {
     const { data, error } = await supabase
       .from("boards")
-      .update({ ...updates, updated_at: new Date().toISOString() })
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", boardId)
       .select()
       .single();
@@ -71,6 +79,7 @@ export const boardService = {
   },
 };
 
+// ─── Column Service ───────────────────────────────────────
 export const columnService = {
   async getColumns(
     supabase: SupabaseClient,
@@ -117,6 +126,7 @@ export const columnService = {
   },
 };
 
+// ─── Task Service ─────────────────────────────────────────
 export const taskService = {
   async getTasksByBoard(
     supabase: SupabaseClient,
@@ -170,6 +180,7 @@ export const taskService = {
   },
 };
 
+// ─── Board Data Service (Composite) ───────────────────────
 export const boardDataService = {
   async getBoardWithColumns(supabase: SupabaseClient, boardId: string) {
     const [board, columns] = await Promise.all([
@@ -186,10 +197,7 @@ export const boardDataService = {
       tasks: tasks.filter((task) => task.column_id === column.id),
     }));
 
-    return {
-      board,
-      columnsWithTasks,
-    };
+    return { board, columnsWithTasks };
   },
 
   async deleteBoard(supabase: SupabaseClient, boardId: string): Promise<void> {
