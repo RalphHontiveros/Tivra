@@ -6,7 +6,7 @@ import { useUser } from "@clerk/nextjs";
 
 // Supabase
 import { useSupabase } from "../supabase/SupabaseProvider";
-import { Board, ColumnWithTasks, Task } from "../supabase/models";
+import { Board, ColumnWithTasks, Task, Label, ChecklistItem } from "../supabase/models";
 
 // Services
 import {
@@ -21,7 +21,7 @@ export function useBoards() {
   const { user } = useUser();
   const { supabase } = useSupabase();
 
-  const [boards, setBoards] = useState<Board[]>([]);
+  const [boards, setBoards] = useState<(Board & { taskCount?: number })[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,12 +30,27 @@ export function useBoards() {
   }, [user, supabase]);
 
   async function loadBoards() {
-    if (!user) return;
+    if (!user || !supabase) {
+      setError("Supabase client or user not available.");
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       setError(null);
-      const data = await boardService.getBoards(supabase!, user.id);
-      setBoards(data);
+      const data = await boardService.getBoards(supabase, user.id);
+      // Fetch task count for each board
+      const boardsWithTaskCount = await Promise.all(
+        data.map(async (board: Board) => {
+          try {
+            const tasks = await taskService.getTasksByBoard(supabase, board.id);
+            return { ...board, taskCount: tasks.length };
+          } catch {
+            return { ...board, taskCount: 0 };
+          }
+        })
+      );
+      setBoards(boardsWithTaskCount);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load boards.");
     } finally {
@@ -64,12 +79,7 @@ export function useBoards() {
     if (!user) throw new Error("User not authenticated");
     try {
       await boardService.archiveBoard(supabase!, boardId, archived);
-
-      if (archived) {
-        setBoards((prev) => prev.filter((b) => b.id !== boardId));
-      } else {
-        await loadBoards();
-      }
+      await loadBoards();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to archive board.");
     }
@@ -135,6 +145,8 @@ export function useBoard(boardId: string) {
       assignee?: string;
       dueDate?: string;
       priority?: "low" | "medium" | "high";
+      labels?: Label[];
+      checklist?: ChecklistItem[];
     }
   ) {
     try {
@@ -157,6 +169,23 @@ export function useBoard(boardId: string) {
       return newTask;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create the task.");
+    }
+  }
+
+  async function copyColumn(column: ColumnWithTasks) {
+    const newTitle = column.title + " (Copy)";
+    const newCol = await createColumn(newTitle);
+    if (!newCol) return;
+    for (const task of column.tasks) {
+      await createRealTask(newCol.id, {
+        title: task.title,
+        description: task.description ?? undefined,
+        assignee: task.assignee ?? undefined,
+        dueDate: task.due_date ?? undefined,
+        priority: task.priority,
+        labels: task.labels,
+        checklist: task.checklist,
+      });
     }
   }
 
@@ -233,5 +262,6 @@ export function useBoard(boardId: string) {
     moveTask,
     createColumn,
     updateColumn,
+    copyColumn,
   };
 }
