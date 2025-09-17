@@ -32,4 +32,16 @@ export interface Task {
   priority: "low" | "medium" | "high";
   sort_order: number;
   created_at: string;
+  labels?: Label[];
+  checklist?: ChecklistItem[];
+}
+
+export interface ChecklistItem {
+  text: string;
+  done: boolean;
+}
+
+export interface Label {
+  color: string;
+  name: string;
 }
