@@ -1,5 +1,5 @@
 "use client";
-
+import { useEffect, useState } from "react";
 import { SignInButton, SignUpButton, UserButton, useUser } from "@clerk/nextjs";
 import {
   ArrowLeft,
@@ -7,6 +7,10 @@ import {
   Filter,
   MoreHorizontal,
   ListTodo,
+  Menu,
+  X,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import Link from "next/link";
@@ -16,10 +20,10 @@ import { Badge } from "./ui/badge";
 interface Props {
   boardTitle?: string;
   onEditBoard?: () => void;
-
   onFilterClick?: () => void;
   filterCount?: number;
 }
+
 export default function Navbar({
   boardTitle,
   onEditBoard,
@@ -28,23 +32,47 @@ export default function Navbar({
 }: Props) {
   const { isSignedIn, user } = useUser();
   const pathname = usePathname();
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === "dark") root.classList.add("dark");
+    else root.classList.remove("dark");
+  }, [theme]);
 
   const isDashboardPage = pathname === "/dashboard";
   const isBoardPage = pathname.startsWith("/boards/");
 
+  // Shared brand/logo
+  const Brand = (
+    <Link href="/" className="flex items-center space-x-2 group">
+      <ListTodo className="h-6 w-6 sm:h-7 sm:w-7 text-blue-600 dark:text-blue-400 group-hover:text-indigo-600 transition-colors" />
+      <span className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white group-hover:text-indigo-600 transition-colors">
+        Taskero
+      </span>
+    </Link>
+  );
+
   if (isDashboardPage) {
     return (
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-3 sm:py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <ListTodo className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
-            <span className="text-xl sm:text-2xl font-bold text-gray-900">
-              Taskero
-            </span>
-          </div>
-
-          <div className="flex items-center space-x-2 sm:space-x-4">
-            <UserButton />
+      <header className="border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+          {Brand}
+          <div className="flex items-center gap-3">
+            <button
+              aria-label="Toggle theme"
+              title="Toggle theme"
+              onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
+              className="flex items-center gap-2 p-2 rounded-full shadow bg-white/80 dark:bg-gray-800/60 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+            >
+              {theme === "dark" ? (
+                <Sun className="h-5 w-5 text-yellow-400" />
+              ) : (
+                <Moon className="h-5 w-5 text-blue-600" />
+              )}
+            </button>
+            <UserButton afterSignOutUrl="/" />
           </div>
         </div>
       </header>
@@ -53,110 +81,147 @@ export default function Navbar({
 
   if (isBoardPage) {
     return (
-      <header className="bg-white border-b sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-3 sm:py-4">
+      <header className="border-b bg-white dark:bg-gray-900 sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2 sm:space-x-4 min-w-0">
+            {/* Left side */}
+            <div className="flex items-center space-x-3 min-w-0">
               <Link
                 href="/dashboard"
-                className="flex items-center space-x-1 sm:space-x-2 text-gray-600 hover:text-gray-900 flex-shrink-0"
+                className="flex items-center space-x-1 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
               >
-                <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+                <ArrowLeft className="h-5 w-5" />
                 <span className="hidden sm:inline">Back to dashboard</span>
                 <span className="sm:hidden">Back</span>
               </Link>
-              <div className="h-4 sm:h-6 w-px bg-gray-300 hidden sm:block" />
-              <div className="flex items-center space-x-1 sm:space-x-2 min-w-0">
-                <ListTodo className="text-blue-600" />
-                <div className="items-center space-x-1 sm:space-x-2 min-w-0">
-                  <span className="text-lg font-bold text-gray-900 truncate">
-                    {boardTitle}
-                  </span>
-                  {onEditBoard && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 w-7 flex-shrink-0 p-0"
-                      onClick={onEditBoard}
-                    >
-                      <MoreHorizontal />
-                    </Button>
-                  )}
-                </div>
+
+              <span className="hidden sm:block h-5 w-px bg-gray-300 dark:bg-gray-600" />
+
+              <div className="flex items-center min-w-0 space-x-2">
+                <ListTodo className="text-blue-600 dark:text-blue-400" />
+                <span className="text-lg font-bold text-gray-900 dark:text-white truncate">
+                  {boardTitle}
+                </span>
+                {onEditBoard && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={onEditBoard}
+                    aria-label="Edit board"
+                  >
+                    <MoreHorizontal />
+                  </Button>
+                )}
               </div>
             </div>
 
-            <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
-              {onFilterClick && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className={`text-xs sm:text-sm ${
-                    filterCount > 0 ? "bg-blue-100 border-blue-200" : ""
-                  }`}
-                  onClick={onFilterClick}
-                >
-                  <Filter className="h-3 w-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                  <span className="hidden sm:inline">Filter</span>
-                  {filterCount > 0 && (
-                    <Badge
-                      variant="secondary"
-                      className="text-xs ml-1 sm:ml-2 bg-blue-100 border-blue-200"
-                    >
-                      {filterCount}
-                    </Badge>
-                  )}
-                </Button>
-              )}
-            </div>
+            {/* Right side */}
+            {onFilterClick && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onFilterClick}
+                className={`${
+                  filterCount > 0
+                    ? "bg-blue-100 border-blue-300 text-blue-700 dark:bg-blue-900/30 dark:border-blue-700 dark:text-blue-300"
+                    : ""
+                }`}
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Filter</span>
+                {filterCount > 0 && (
+                  <Badge
+                    variant="secondary"
+                    className="ml-2 bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-200"
+                  >
+                    {filterCount}
+                  </Badge>
+                )}
+              </Button>
+            )}
           </div>
         </div>
       </header>
     );
   }
 
+  // Default (landing)
   return (
-    <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-      <div className="container mx-auto px-4 py-3 sm:py-4 flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <ListTodo className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
-          <span className="text-xl sm:text-2xl font-bold text-gray-900">
-            Taskero
-          </span>
-        </div>
+    <header className="border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm sticky top-0 z-50">
+      <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+        {Brand}
 
-        <div className="flex items-center space-x-2 sm:space-x-4">
+        {/* Desktop */}
+        <div className="hidden sm:flex items-center space-x-4">
           {isSignedIn ? (
-            <div className="flex flex-col sm:flex-row items-end sm:items-center space-y-1 sm:space-y-0 sm:space-x-4">
-              <span className="text-xs sm:text-sm text-gray-600 hidden sm:block">
+            <>
+              <span className="text-sm text-gray-600 dark:text-gray-300">
                 Welcome, {user.firstName ?? user.emailAddresses[0].emailAddress}
               </span>
               <Link href="/dashboard">
-                <Button size="sm" className="text-xs sm:text-sm">
-                  Go to Dashboard <ArrowRight />
+                <Button size="sm">
+                  Dashboard <ArrowRight className="ml-1 h-4 w-4" />
                 </Button>
               </Link>
-            </div>
+            </>
           ) : (
-            <div>
+            <>
               <SignInButton>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs sm:text-sm"
-                >
+                <Button variant="ghost" size="sm">
                   Sign In
                 </Button>
               </SignInButton>
               <SignUpButton>
-                <Button size="sm" className="text-xs sm:text-sm">
+                <Button size="sm">Sign Up</Button>
+              </SignUpButton>
+            </>
+          )}
+        </div>
+
+        {/* Mobile */}
+        <div className="sm:hidden">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setMobileOpen(!mobileOpen)}
+            aria-label="Toggle menu"
+          >
+            {mobileOpen ? <X /> : <Menu />}
+          </Button>
+        </div>
+      </div>
+
+      {/* Mobile dropdown */}
+      {mobileOpen && (
+        <div className="sm:hidden border-t bg-white dark:bg-gray-900 px-4 py-3 space-y-2">
+          {isSignedIn ? (
+            <>
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Welcome, {user.firstName ?? user.emailAddresses[0].emailAddress}
+              </p>
+              <Link href="/dashboard">
+                <Button size="sm" className="w-full">
+                  Dashboard
+                </Button>
+              </Link>
+              <UserButton afterSignOutUrl="/" />
+            </>
+          ) : (
+            <>
+              <SignInButton>
+                <Button variant="ghost" size="sm" className="w-full">
+                  Sign In
+                </Button>
+              </SignInButton>
+              <SignUpButton>
+                <Button size="sm" className="w-full">
                   Sign Up
                 </Button>
               </SignUpButton>
-            </div>
+            </>
           )}
         </div>
-      </div>
+      )}
     </header>
   );
 }
