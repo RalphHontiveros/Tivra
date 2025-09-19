@@ -124,6 +124,23 @@ export const columnService = {
     if (error) throw error;
     return data;
   },
+
+  // 🔥 Added: updateColumnOrder
+  async updateColumnOrder(
+    supabase: SupabaseClient,
+    columnId: string,
+    sortOrder: number
+  ): Promise<Column> {
+    const { data, error } = await supabase
+      .from("columns")
+      .update({ sort_order: sortOrder })
+      .eq("id", columnId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
 };
 
 // ─── Task Service ─────────────────────────────────────────

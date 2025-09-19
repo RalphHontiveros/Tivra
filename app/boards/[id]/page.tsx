@@ -635,6 +635,30 @@ export default function BoardPage() {
     if (task) setActiveTask(task);
   }
 
+  function handleMoveColumn(column: ColumnWithTasks, targetIndex: number) {
+  setColumns(prev => {
+    const next = [...prev];
+    const currentIndex = next.findIndex(c => c.id === column.id);
+    if (currentIndex === -1) return prev;
+
+    const [removed] = next.splice(currentIndex, 1);
+    next.splice(targetIndex, 0, removed);
+    return next;
+  });
+}
+
+function handleMoveAllCards(fromColumnId: string, toColumnIdx: number) {
+  setColumns(prev => {
+    const next = [...prev];
+    const fromCol = next.find(c => c.id === fromColumnId);
+    const toCol = next[toColumnIdx];
+    if (!fromCol || !toCol) return prev;
+    toCol.tasks = [...toCol.tasks, ...fromCol.tasks];
+    fromCol.tasks = [];
+    return next;
+  });
+}
+
   function handleDragOver(event: DragOverEvent) {
     const { active, over } = event;
     if (!over) return;
@@ -821,48 +845,22 @@ export default function BoardPage() {
                 onCreateTask={handleCreateTask}
                 onEditColumn={handleEditColumnOpen}
                 onCopyColumn={handleCopyColumn}
-                onMoveColumn={(column, targetIndex) => {
-                  // Move column logic: reorder columns array
-                  setColumns(prev => {
-                    const arr = [...prev];
-                    const from = arr.findIndex(c => c.id === column.id);
-                    if (from === -1 || from === targetIndex) return arr;
-                    const [removed] = arr.splice(from, 1);
-                    arr.splice(targetIndex, 0, removed);
-                    return arr;
-                  });
-                }}
-                onMoveAllCards={async (fromColumnId, toColumnIdx) => {
-                  setColumns(prev => {
-                    const arr = [...prev];
-                    const fromIdx = arr.findIndex(c => c.id === fromColumnId);
-                    if (fromIdx === -1 || toColumnIdx === fromIdx) return arr;
-                    const toCol = arr[toColumnIdx];
-                    if (!toCol) return arr;
-                    // Move all tasks in UI
-                    toCol.tasks = [...toCol.tasks, ...arr[fromIdx].tasks];
-                    arr[fromIdx].tasks = [];
-                    return arr;
-                  });
-                  // Move all tasks in backend
-                  const fromCol = columns.find(c => c.id === fromColumnId);
-                  const toCol = columns[toColumnIdx];
-                  if (fromCol && toCol) {
-                    for (const task of fromCol.tasks) {
-                      await moveTask(task.id, toCol.id, toCol.tasks.length);
-                    }
-                  }
-                }}
+                onMoveAllCards={handleMoveAllCards}
+                onMoveColumn={handleMoveColumn}
               >
-                <SortableContext items={col.tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
+                <SortableContext
+                  items={col.tasks.map((t) => t.id)}
+                  strategy={verticalListSortingStrategy}
+                >
                   <div className="space-y-3">
-                    {col.tasks.map(task => (
+                    {col.tasks.map((task) => (
                       <SortableTask key={task.id} task={task} />
                     ))}
                   </div>
                 </SortableContext>
               </DroppableColumn>
             ))}
+
 
             {/* add column CTA removed, now in dropdown */}
             <button id="add-list-btn" style={{ display: 'none' }} onClick={() => setIsCreatingColumn(true)} />
