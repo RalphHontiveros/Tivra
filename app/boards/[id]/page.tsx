@@ -1233,218 +1233,101 @@ function handleMoveAllCards(fromColumnId: string, toColumnIdx: number) {
 
       {/* Dialog - Archived Items */}
       <Dialog open={showArchived} onOpenChange={setShowArchived}>
-        <DialogContent className="w-[98vw] sm:w-[95vw] max-w-7xl mx-auto h-[90vh] sm:h-[85vh] overflow-hidden flex flex-col p-0">
-          <DialogHeader className="flex-shrink-0 p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
-            <DialogTitle className="flex items-center gap-2 sm:gap-3 text-lg sm:text-xl">
-              <div className="p-1.5 sm:p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                <Archive className="h-4 w-4 sm:h-6 sm:w-6 text-orange-600 dark:text-orange-400" />
-              </div>
-              <span className="truncate">Archived Items</span>
+        <DialogContent className="w-[95vw] max-w-4xl mx-auto max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Archive className="h-5 w-5" />
+              Archived Items
             </DialogTitle>
-            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1 sm:mt-2">
-              Manage your archived lists and tasks. Restore items to bring them back to your board.
+            <p className="text-sm text-gray-600">
+              Restore archived lists and tasks to bring them back to your board.
             </p>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-            <div className="space-y-6 sm:space-y-8">
-              {/* Archived Lists Section */}
-              {archivedColumns.length > 0 && (
-                <div className="space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
-                    <div className="flex items-center gap-2 sm:gap-3">
-                      <div className="p-1.5 sm:p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                        <svg className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                        </svg>
-                      </div>
-                      <div className="min-w-0">
-                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">Archived Lists</h3>
-                        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{archivedColumns.length} list{archivedColumns.length !== 1 ? 's' : ''} archived</p>
-                      </div>
-                    </div>
-                    <Badge variant="outline" className="text-xs self-start sm:self-auto">
-                      {archivedColumns.reduce((total, col) => total + col.tasks.length, 0)} total tasks
-                    </Badge>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                    {archivedColumns.map((column) => (
-                      <Card key={column.id} className="group hover:shadow-lg transition-all duration-200 border-l-4 border-l-blue-500 bg-white dark:bg-gray-800">
-                        <CardContent className="p-3 sm:p-4 lg:p-5">
-                          <div className="flex items-start justify-between mb-3 sm:mb-4">
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base mb-1 truncate">
-                                {column.title}
-                              </h4>
-                              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                                <span className="flex items-center gap-1">
-                                  <svg className="h-3 w-3 sm:h-4 sm:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                                  </svg>
-                                  {column.tasks.length} task{column.tasks.length !== 1 ? 's' : ''}
-                                </span>
-                                <span className="hidden sm:inline">•</span>
-                                <span>Archived</span>
-                              </div>
-                            </div>
-                            <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 flex-shrink-0">
-                              List
-                            </Badge>
+          <div className="space-y-6">
+            {/* Archived Lists */}
+            {archivedColumns.length > 0 && (
+              <div>
+                <h4 className="text-md font-medium text-gray-800 dark:text-gray-200 mb-4">Archived Lists ({archivedColumns.length})</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {archivedColumns.map((column) => (
+                    <Card key={column.id} className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div>
+                            <h5 className="font-medium text-gray-900 dark:text-white">{column.title}</h5>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                              {column.tasks.length} tasks
+                            </p>
                           </div>
-                          
-                          {column.tasks.length > 0 && (
-                            <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                              <p className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-2">Tasks in this list:</p>
-                              <div className="space-y-1">
-                                {column.tasks.slice(0, 3).map((task) => (
-                                  <div key={task.id} className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                                    <div className="w-1.5 h-1.5 bg-gray-400 rounded-full flex-shrink-0"></div>
-                                    <span className="truncate">{task.title}</span>
-                                  </div>
-                                ))}
-                                {column.tasks.length > 3 && (
-                                  <div className="text-xs text-gray-400">
-                                    +{column.tasks.length - 3} more task{column.tasks.length - 3 !== 1 ? 's' : ''}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          )}
-                          
-                          <div className="flex flex-col sm:flex-row gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => restoreColumn(column.id)}
-                              className="flex-1 text-xs hover:bg-green-50 hover:text-green-700 hover:border-green-300 dark:hover:bg-green-900/20"
-                            >
-                              <svg className="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                              </svg>
-                              <span className="hidden sm:inline">Restore List</span>
-                              <span className="sm:hidden">Restore</span>
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => setDeleteColumnId(column.id)}
-                              className="flex-1 text-xs"
-                            >
-                              <svg className="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                              <span className="hidden sm:inline">Delete</span>
-                              <span className="sm:hidden">Delete</span>
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
+                          <Badge variant="secondary" className="text-xs">Archived</Badge>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => restoreColumn(column.id)}
+                            className="flex-1"
+                          >
+                            Restore
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => setDeleteColumnId(column.id)}
+                            className="flex-1"
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Archived Tasks Section */}
-              {archivedTasks.length > 0 && (
-                <div className="space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
-                    <div className="flex items-center gap-2 sm:gap-3">
-                      <div className="p-1.5 sm:p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                        <svg className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                      </div>
-                      <div className="min-w-0">
-                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">Archived Tasks</h3>
-                        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{archivedTasks.length} task{archivedTasks.length !== 1 ? 's' : ''} archived</p>
-                      </div>
-                    </div>
-                    <Badge variant="outline" className="text-xs self-start sm:self-auto">
-                      Individual tasks
-                    </Badge>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-                    {archivedTasks.map((task) => (
-                      <Card key={task.id} className="group hover:shadow-lg transition-all duration-200 border-l-4 border-l-purple-500 bg-white dark:bg-gray-800">
-                        <CardContent className="p-3 sm:p-4">
-                          <div className="flex items-start justify-between mb-2 sm:mb-3">
-                            <div className="flex-1 min-w-0">
-                              <h5 className="font-medium text-gray-900 dark:text-white text-xs sm:text-sm mb-1 line-clamp-2">
-                                {task.title}
-                              </h5>
-                              <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mb-2">
-                                {task.description || "No description"}
-                              </p>
-                              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-xs text-gray-400">
-                                {task.assignee && (
-                                  <span className="flex items-center gap-1">
-                                    <div className="w-3 h-3 sm:w-4 sm:h-4 bg-gray-300 rounded-full flex items-center justify-center text-xs font-medium">
-                                      {task.assignee.charAt(0).toUpperCase()}
-                                    </div>
-                                    <span className="truncate">{task.assignee}</span>
-                                  </span>
-                                )}
-                                {task.due_date && (
-                                  <span className="flex items-center gap-1">
-                                    <Calendar className="h-3 w-3" />
-                                    <span className="hidden sm:inline">{new Date(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                                    <span className="sm:hidden">{new Date(task.due_date).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })}</span>
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 flex-shrink-0">
-                              Task
-                            </Badge>
-                          </div>
-                          
-                          <div className="flex items-center justify-between mb-2 sm:mb-3">
-                            <div className="flex items-center gap-2">
-                              <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                                task.priority === 'high' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' :
-                                task.priority === 'medium' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' :
-                                'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
-                              }`}>
-                                {task.priority}
-                              </span>
-                            </div>
-                          </div>
-                          
+            {/* Archived Tasks */}
+            {archivedTasks.length > 0 && (
+              <div>
+                <h4 className="text-md font-medium text-gray-800 dark:text-gray-200 mb-4">Archived Tasks ({archivedTasks.length})</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {archivedTasks.map((task) => (
+                    <Card key={task.id} className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                      <CardContent className="p-4">
+                        <div className="mb-3">
+                          <h5 className="font-medium text-gray-900 dark:text-white text-sm mb-1">{task.title}</h5>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
+                            {task.description || "No description"}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => restoreTask(task.id)}
-                            className="w-full text-xs hover:bg-green-50 hover:text-green-700 hover:border-green-300 dark:hover:bg-green-900/20"
+                            className="flex-1 text-xs"
                           >
-                            <svg className="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                            </svg>
-                            <span className="hidden sm:inline">Restore Task</span>
-                            <span className="sm:hidden">Restore</span>
+                            Restore
                           </Button>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Empty State */}
-              {archivedColumns.length === 0 && archivedTasks.length === 0 && (
-                <div className="text-center py-8 sm:py-16">
-                  <div className="mx-auto w-16 h-16 sm:w-24 sm:h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4 sm:mb-6">
-                    <Archive className="h-8 w-8 sm:h-12 sm:w-12 text-gray-400" />
-                  </div>
-                  <h4 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-2 sm:mb-3">No Archived Items</h4>
-                  <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 max-w-md mx-auto leading-relaxed px-4">
-                    When you archive lists or tasks, they'll appear here for easy restoration. 
-                    Your archived items are safely stored and can be restored anytime.
-                  </p>
-                </div>
-              )}
-            </div>
+            {/* Empty State */}
+            {archivedColumns.length === 0 && archivedTasks.length === 0 && (
+              <div className="text-center py-12">
+                <Archive className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No Archived Items</h4>
+                <p className="text-gray-600 dark:text-gray-400">
+                  When you archive lists or tasks, they will appear here for easy restoration.
+                </p>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
