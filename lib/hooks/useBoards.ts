@@ -158,6 +158,7 @@ export function useBoard(boardId: string) {
         column_id: columnId,
         sort_order: columns.find((col) => col.id === columnId)?.tasks.length || 0,
         priority: taskData.priority || "medium",
+        is_archived: false,
       });
 
       setColumns((prev) =>
@@ -228,6 +229,7 @@ export function useBoard(boardId: string) {
         board_id: board.id,
         sort_order: columns.length,
         user_id: user.id,
+        is_archived: false,
       });
 
       setColumns((prev) => [...prev, { ...newColumn, tasks: [] }]);
@@ -251,6 +253,31 @@ export function useBoard(boardId: string) {
     }
   }
 
+  async function archiveColumn(columnId: string, archived: boolean) {
+    try {
+      await columnService.archiveColumn(supabase!, columnId, archived);
+      
+      if (archived) {
+        // Remove archived column from the UI
+        setColumns((prev) => prev.filter((col) => col.id !== columnId));
+      } else {
+        // Reload the board to get the restored column
+        await loadBoard();
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to archive column.");
+    }
+  }
+
+  async function deleteColumn(columnId: string) {
+    try {
+      await columnService.deleteColumn(supabase!, columnId);
+      setColumns((prev) => prev.filter((col) => col.id !== columnId));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete column.");
+    }
+  }
+
   return {
     board,
     columns,
@@ -263,5 +290,7 @@ export function useBoard(boardId: string) {
     createColumn,
     updateColumn,
     copyColumn,
+    archiveColumn,
+    deleteColumn,
   };
 }

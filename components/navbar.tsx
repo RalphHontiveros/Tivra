@@ -49,7 +49,7 @@ export default function Navbar({
     <Link href="/" className="flex items-center space-x-2 group">
       <ListTodo className="h-6 w-6 sm:h-7 sm:w-7 text-blue-600 dark:text-blue-400 group-hover:text-indigo-600 transition-colors" />
       <span className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white group-hover:text-indigo-600 transition-colors">
-        Taskero
+        Tivra
       </span>
     </Link>
   );

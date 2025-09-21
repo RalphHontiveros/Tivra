@@ -16,6 +16,7 @@ export interface Column {
   sort_order: number;
   created_at: string;
   user_id: string;
+  is_archived: boolean;
 }
 
 export type ColumnWithTasks = Column & {
@@ -32,6 +33,7 @@ export interface Task {
   priority: "low" | "medium" | "high";
   sort_order: number;
   created_at: string;
+  is_archived: boolean;
   labels?: Label[];
   checklist?: ChecklistItem[];
 }

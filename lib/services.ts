@@ -141,6 +141,29 @@ export const columnService = {
     if (error) throw error;
     return data;
   },
+
+  // 🔥 Added: archiveColumn
+  async archiveColumn(
+    supabase: SupabaseClient,
+    columnId: string,
+    archived: boolean
+  ): Promise<Column> {
+    const { data, error } = await supabase
+      .from("columns")
+      .update({ is_archived: archived })
+      .eq("id", columnId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  // 🔥 Added: deleteColumn
+  async deleteColumn(supabase: SupabaseClient, columnId: string): Promise<void> {
+    const { error } = await supabase.from("columns").delete().eq("id", columnId);
+    if (error) throw error;
+  },
 };
 
 // ─── Task Service ─────────────────────────────────────────
@@ -252,6 +275,7 @@ export const boardDataService = {
           ...column,
           board_id: board.id,
           user_id: boardData.userId,
+          is_archived: false,
         })
       )
     );

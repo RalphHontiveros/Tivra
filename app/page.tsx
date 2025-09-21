@@ -84,7 +84,7 @@ export default function HomePage() {
               </span>
             </h1>
             <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300 max-w-2xl mb-8">
-              Taskero helps teams move work forward. Collaborate, manage projects, and reach new productivity
+              Tivra helps teams move work forward. Collaborate, manage projects, and reach new productivity
               peaks — no limits, no hidden costs.
             </p>
 
@@ -102,7 +102,7 @@ export default function HomePage() {
                     variant="ghost"
                     size="lg"
                     className="px-6 py-3 font-medium"
-                    aria-label="Learn more about Taskero"
+                    aria-label="Learn more about Tivra"
                   >
                     Learn more
                   </Button>
@@ -218,7 +218,7 @@ export default function HomePage() {
         <div className="max-w-4xl mx-auto rounded-2xl bg-gradient-to-r from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 p-8 shadow-lg border border-gray-200 dark:border-gray-800">
           <div className="flex flex-col md:flex-row items-center gap-6">
             <div className="flex-1">
-              <p className="text-lg text-gray-800 dark:text-gray-200">Taskero reduced our planning chaos — we ship faster and communicate better</p>
+              <p className="text-lg text-gray-800 dark:text-gray-200">Tivra reduced our planning chaos — we ship faster and communicate better</p>
               <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">— Jamie L., Product Manager</p>
             </div>
             <div className="flex gap-3">
@@ -236,8 +236,8 @@ export default function HomePage() {
           <div className="relative z-10 rounded-3xl bg-white dark:bg-gray-900 p-10 shadow-2xl border border-gray-200 dark:border-gray-800">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div>
-                <h3 className="text-2xl md:text-3xl font-extrabold text-gray-900 dark:text-white">Start using Taskero today</h3>
-                <p className="text-gray-600 dark:text-gray-400 mt-2">Join teams and individuals who are already using Taskero to stay organized.</p>
+                <h3 className="text-2xl md:text-3xl font-extrabold text-gray-900 dark:text-white">Start using Tivra today</h3>
+                <p className="text-gray-600 dark:text-gray-400 mt-2">Join teams and individuals who are already using Tivra to stay organized.</p>
               </div>
 
               <div className="flex gap-4">
@@ -257,11 +257,11 @@ export default function HomePage() {
               <div className="flex items-center gap-3 mb-4">
                 <ListTodo className="h-7 w-7 text-blue-600 dark:text-blue-300" />
                 <div>
-                  <div className="text-lg font-bold">Taskero</div>
+                  <div className="text-lg font-bold">Tivra</div>
                   <div className="text-sm text-gray-500 dark:text-gray-400">Organize work, ship faster</div>
                 </div>
               </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400">© {new Date().getFullYear()} Taskero. All rights reserved.</div>
+              <div className="text-sm text-gray-500 dark:text-gray-400">© {new Date().getFullYear()} Tivra. All rights reserved.</div>
             </div>
 
             <div className="flex gap-8">
