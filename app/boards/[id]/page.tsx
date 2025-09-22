@@ -1346,7 +1346,10 @@ function handleMoveAllCards(fromColumnId: string, toColumnIdx: number) {
             </div>
             <div className="space-y-2">
               <Label>Priority</Label>
-              <Select value={editPriority} onValueChange={(v) => setEditPriority(v as any)}>
+              <Select
+  value={editPriority}
+  onValueChange={(v: "low" | "medium" | "high") => setEditPriority(v)}
+>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
