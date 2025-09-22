@@ -15,6 +15,7 @@ import {
   columnService,
   taskService,
 } from "../services";
+import { moveColumnToIndex } from "../utils";
 
 // ─── useBoards Hook ──────────────────────────────────────────────
 export function useBoards() {
@@ -253,6 +254,23 @@ export function useBoard(boardId: string) {
     }
   }
 
+  async function moveColumn(columnId: string, targetIndex: number) {
+    try {
+      // Optimistically reorder locally
+      setColumns((prev) => moveColumnToIndex(prev, columnId, targetIndex));
+
+      // Persist new sort_order for all columns
+      await Promise.all(
+        (columns.length ? moveColumnToIndex(columns, columnId, targetIndex) : [])
+          .map((col, idx) => columnService.updateColumnOrder(supabase!, col.id, idx))
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to move column.");
+      // Reload authoritative state on failure
+      await loadBoard();
+    }
+  }
+
   async function archiveColumn(columnId: string, archived: boolean) {
     try {
       await columnService.archiveColumn(supabase!, columnId, archived);
@@ -292,5 +310,6 @@ export function useBoard(boardId: string) {
     copyColumn,
     archiveColumn,
     deleteColumn,
+    moveColumn,
   };
 }

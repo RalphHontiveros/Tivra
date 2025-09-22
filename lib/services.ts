@@ -1,6 +1,6 @@
 // ─── Imports ──────────────────────────────────────────────
 import { SupabaseClient } from "@supabase/supabase-js";
-import { Board, Column, Task } from "./supabase/models";
+import { Board, Column, Task, ColumnWithTasks } from "./supabase/models";
 
 // ─── Board Service ────────────────────────────────────────
 export const boardService = {
@@ -89,6 +89,22 @@ export const columnService = {
       .from("columns")
       .select("*")
       .eq("board_id", boardId)
+      .eq("is_archived", false)
+      .order("sort_order", { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getArchivedColumns(
+    supabase: SupabaseClient,
+    boardId: string
+  ): Promise<Column[]> {
+    const { data, error } = await supabase
+      .from("columns")
+      .select("*")
+      .eq("board_id", boardId)
+      .eq("is_archived", true)
       .order("sort_order", { ascending: true });
 
     if (error) throw error;
@@ -181,10 +197,55 @@ export const taskService = {
         `
       )
       .eq("columns.board_id", boardId)
+      .eq("is_archived", false)
       .order("sort_order", { ascending: true });
 
     if (error) throw error;
     return data || [];
+  },
+
+  async getArchivedTasksByBoard(
+    supabase: SupabaseClient,
+    boardId: string
+  ): Promise<Task[]> {
+    const { data, error } = await supabase
+      .from("tasks")
+      .select(
+        `
+        *,
+        columns!inner(board_id)
+        `
+      )
+      .eq("columns.board_id", boardId)
+      .eq("is_archived", true)
+      .order("sort_order", { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async archiveTasksInColumn(
+    supabase: SupabaseClient,
+    columnId: string,
+    archived: boolean
+  ): Promise<void> {
+    const { error } = await supabase
+      .from("tasks")
+      .update({ is_archived: archived })
+      .eq("column_id", columnId);
+    if (error) throw error;
+  },
+
+  async archiveTask(
+    supabase: SupabaseClient,
+    taskId: string,
+    archived: boolean
+  ): Promise<void> {
+    const { error } = await supabase
+      .from("tasks")
+      .update({ is_archived: archived })
+      .eq("id", taskId);
+    if (error) throw error;
   },
 
   async createTask(
@@ -238,6 +299,20 @@ export const boardDataService = {
     }));
 
     return { board, columnsWithTasks };
+  },
+
+  async getArchivedColumnsWithTasks(
+    supabase: SupabaseClient,
+    boardId: string
+  ): Promise<ColumnWithTasks[]> {
+    const [columns, tasks] = await Promise.all([
+      columnService.getArchivedColumns(supabase, boardId),
+      taskService.getTasksByBoard(supabase, boardId),
+    ]);
+    return columns.map((column) => ({
+      ...column,
+      tasks: tasks.filter((task) => task.column_id === column.id),
+    }));
   },
 
   async deleteBoard(supabase: SupabaseClient, boardId: string): Promise<void> {

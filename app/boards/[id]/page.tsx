@@ -27,7 +27,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useBoard } from "@/lib/hooks/useBoards";
 import { ColumnWithTasks, Task } from "@/lib/supabase/models";
 import { useSupabase } from "@/lib/supabase/SupabaseProvider";
-import { Archive, Calendar, MoreHorizontal, Plus, Search, X } from "lucide-react";
+import { Archive, Calendar, MoreHorizontal, Plus, Search, X, Pencil, Trash, Maximize2 } from "lucide-react";
 import {
   DndContext,
   DragEndEvent,
@@ -50,7 +50,7 @@ import { CSS } from "@dnd-kit/utilities";
 // ====================================================
 // 🔹 Sortable Task Card
 // ====================================================
-function SortableTask({ task }: { task: Task }) {
+function SortableTask({ task, onEdit, onDelete, onView }: { task: Task; onEdit: (t: Task) => void; onDelete: (t: Task) => void; onView: (t: Task) => void }) {
   const {
     attributes,
     listeners,
@@ -110,13 +110,53 @@ function SortableTask({ task }: { task: Task }) {
           <h4 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100 leading-snug break-words">
             {task.title}
           </h4>
-          <PriorityPill p={task.priority} />
+          <div className="flex items-center gap-2">
+            <PriorityPill p={task.priority} />
+            <button
+              type="button"
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onEdit(task); }}
+              className="p-2 sm:p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
+              aria-label="Edit task"
+              title="Edit task"
+            >
+              <Pencil className="h-5 w-5 sm:h-4 sm:w-4 text-gray-500" />
+            </button>
+            <button
+              type="button"
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onView(task); }}
+              className="p-2 sm:p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
+              aria-label="Open full view"
+              title="Open full view"
+            >
+              <Maximize2 className="h-5 w-5 sm:h-4 sm:w-4 text-gray-500" />
+            </button>
+            <button
+              type="button"
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete(task); }}
+              className="p-2 sm:p-1 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20"
+              aria-label="Delete task"
+              title="Delete task"
+            >
+              <Trash className="h-5 w-5 sm:h-4 sm:w-4 text-red-500" />
+            </button>
+          </div>
         </div>
 
         {/* Description */}
-        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 line-clamp-2 sm:line-clamp-3 leading-relaxed">
-          {task.description || "No description provided."}
-        </p>
+        <div className="space-y-1">
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 line-clamp-2 sm:line-clamp-3 leading-relaxed">
+            {task.description || "No description provided."}
+          </p>
+          {task.description && (
+            <button
+              type="button"
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onView(task); }}
+              className="text-[11px] sm:text-xs text-indigo-600 hover:underline dark:text-indigo-400"
+            >
+              View full description
+            </button>
+          )}
+        </div>
 
         {/* Checklist */}
         {checklist.length > 0 && (
@@ -258,6 +298,7 @@ function DroppableColumn({
       initial={{ opacity: 0.9, scale: 0.995 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0 }}
+      style={{ scrollSnapAlign: "start" }}
       className={`w-full sm:w-72 lg:w-80 flex-shrink-0 ${isOver ? "bg-blue-50 rounded-xl" : ""}`}
     >
       <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border ${isOver ? "ring-2 ring-blue-300" : ""}`}>
@@ -612,6 +653,7 @@ export default function BoardPage() {
     copyColumn,
     archiveColumn,
     deleteColumn,
+    moveColumn,
   } = useBoard(id);
 
   // Handler for dropdown Copy list
@@ -640,10 +682,25 @@ export default function BoardPage() {
   const [showArchived, setShowArchived] = useState(false);
   const [archivedColumns, setArchivedColumns] = useState<ColumnWithTasks[]>([]);
   const [archivedTasks, setArchivedTasks] = useState<Task[]>([]);
+  const [loadingArchived, setLoadingArchived] = useState(false);
+  const [archiveCategory, setArchiveCategory] = useState<"lists" | "cards">("lists");
 
   const [query, setQuery] = useState("");
 
   const [activeTask, setActiveTask] = useState<Task | null>(null);
+
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [isEditingTaskOpen, setIsEditingTaskOpen] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editAssignee, setEditAssignee] = useState("");
+  const [editDueDate, setEditDueDate] = useState("");
+  const [editPriority, setEditPriority] = useState<"low" | "medium" | "high">("medium");
+  const [isDeletingTaskOpen, setIsDeletingTaskOpen] = useState(false);
+  const [deletingTask, setDeletingTask] = useState<Task | null>(null);
+  const [deleteTaskLoading, setDeleteTaskLoading] = useState(false);
+  const [isViewingTaskOpen, setIsViewingTaskOpen] = useState(false);
+  const [viewingTask, setViewingTask] = useState<Task | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
@@ -658,6 +715,14 @@ export default function BoardPage() {
       tasks: col.tasks.filter(t => (t.title + " " + (t.description || "")).toLowerCase().includes(q)),
     }));
   }, [columns, query]);
+
+  /* -------------------- Helpers -------------------- */
+  function toInputDate(dateStr: string | null): string {
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return "";
+    return d.toISOString().slice(0, 10);
+  }
 
   /* -------------------- Handlers -------------------- */
   async function handleCreateColumn(e: React.FormEvent) {
@@ -701,20 +766,71 @@ export default function BoardPage() {
     setIsEditingColumn(true);
   }
 
+  function openEditTask(task: Task) {
+    setEditingTask(task);
+    setEditTitle(task.title);
+    setEditDescription(task.description || "");
+    setEditAssignee(task.assignee || "");
+    setEditDueDate(toInputDate(task.due_date));
+    setEditPriority(task.priority);
+    setIsEditingTaskOpen(true);
+  }
+
+  async function handleUpdateTask(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingTask) return;
+    const updates = {
+      title: editTitle.trim(),
+      description: editDescription.trim() || null,
+      assignee: editAssignee.trim() || null,
+      due_date: editDueDate || null,
+      priority: editPriority,
+    } as const;
+
+    await supabase!.from("tasks").update(updates).eq("id", editingTask.id);
+
+    setColumns(prev => prev.map(col => ({
+      ...col,
+      tasks: col.tasks.map(t => t.id === editingTask.id ? { ...t, ...updates } as Task : t)
+    })));
+
+    setIsEditingTaskOpen(false);
+    setEditingTask(null);
+  }
+
+  function openDeleteTask(task: Task) {
+    setDeletingTask(task);
+    setIsDeletingTaskOpen(true);
+  }
+
+  function openViewTask(task: Task) {
+    setViewingTask(task);
+    setIsViewingTaskOpen(true);
+  }
+
+  async function handleDeleteTask() {
+    if (!deletingTask) return;
+    setDeleteTaskLoading(true);
+    try {
+      await supabase!.from("tasks").delete().eq("id", deletingTask.id);
+      setColumns(prev => prev.map(col => ({
+        ...col,
+        tasks: col.tasks.filter(t => t.id !== deletingTask.id)
+      })));
+      // Also remove from archived list if present
+      setArchivedTasks(prev => prev.filter(t => t.id !== deletingTask.id));
+      setIsDeletingTaskOpen(false);
+      setDeletingTask(null);
+    } finally {
+      setDeleteTaskLoading(false);
+    }
+  }
+
   async function handleArchiveColumn() {
     if (!archiveColumnId) return;
     setArchiveLoading(true);
     try {
-      // Find the column to archive
-      const columnToArchive = columns.find(col => col.id === archiveColumnId);
-      if (!columnToArchive) return;
-
-      // Add to archived columns
-      setArchivedColumns(prev => [...prev, columnToArchive]);
-      
-      // Remove from active columns
-      setColumns(prev => prev.filter(col => col.id !== archiveColumnId));
-      
+      await archiveColumn(archiveColumnId, true);
       setArchiveColumnId(null);
     } catch (err) {
       console.error('Failed to archive column:', err);
@@ -738,20 +854,16 @@ export default function BoardPage() {
     if (!archiveAllCardsId) return;
     setArchiveAllCardsLoading(true);
     try {
-      // Find the column and get all its tasks
-      const column = columns.find(col => col.id === archiveAllCardsId);
-      if (column && column.tasks.length > 0) {
-        // Add tasks to archived tasks
-        setArchivedTasks(prev => [...prev, ...column.tasks]);
-        
-        // Remove tasks from the column
-        setColumns(prev => prev.map(col => 
-          col.id === archiveAllCardsId 
-            ? { ...col, tasks: [] }
-            : col
-        ));
-      }
-      
+        const { taskService } = await import("@/lib/services");
+      // Persist: mark all tasks in the column as archived
+      await taskService.archiveTasksInColumn(supabase!, archiveAllCardsId, true);
+
+      // Optimistic UI: clear tasks from the column
+      setColumns(prev => prev.map(col => col.id === archiveAllCardsId ? { ...col, tasks: [] } : col));
+
+      // Refresh archived items list for the modal
+      await loadArchivedItems();
+
       setArchiveAllCardsId(null);
     } catch (err) {
       console.error('Failed to archive all cards:', err);
@@ -761,22 +873,27 @@ export default function BoardPage() {
   }
 
   async function loadArchivedItems() {
-    // No need to load from database since we're using local state
-    // The archived items are already in state
-    console.log("Loading archived items from local state");
+    try {
+      if (!id) return;
+      setLoadingArchived(true);
+      const { boardDataService, taskService } = await import("@/lib/services");
+      const archivedCols = await boardDataService.getArchivedColumnsWithTasks(supabase!, String(id));
+      const archivedTsks = await taskService.getArchivedTasksByBoard(supabase!, String(id));
+      setArchivedColumns(archivedCols);
+      setArchivedTasks(archivedTsks);
+    } catch (err) {
+      console.error("Failed to load archived items:", err);
+    } finally {
+      setLoadingArchived(false);
+    }
   }
 
   async function restoreColumn(columnId: string) {
     try {
-      // Find the archived column
-      const archivedColumn = archivedColumns.find(col => col.id === columnId);
-      if (!archivedColumn) return;
-
-      // Add back to active columns
-      setColumns(prev => [...prev, archivedColumn]);
-      
-      // Remove from archived columns
-      setArchivedColumns(prev => prev.filter(col => col.id !== columnId));
+      // Persist restore (unarchive) on backend and reload active columns via hook
+      await archiveColumn(columnId, false);
+      // Refresh archived lists view
+      await loadArchivedItems();
     } catch (err) {
       console.error("Failed to restore column:", err);
     }
@@ -811,17 +928,9 @@ export default function BoardPage() {
     if (task) setActiveTask(task);
   }
 
-  function handleMoveColumn(column: ColumnWithTasks, targetIndex: number) {
-  setColumns(prev => {
-    const next = [...prev];
-    const currentIndex = next.findIndex(c => c.id === column.id);
-    if (currentIndex === -1) return prev;
-
-    const [removed] = next.splice(currentIndex, 1);
-    next.splice(targetIndex, 0, removed);
-    return next;
-  });
-}
+  async function handleMoveColumn(column: ColumnWithTasks, targetIndex: number) {
+    await moveColumn(column.id, targetIndex);
+  }
 
 function handleMoveAllCards(fromColumnId: string, toColumnIdx: number) {
   setColumns(prev => {
@@ -1066,7 +1175,7 @@ function handleMoveAllCards(fromColumnId: string, toColumnIdx: number) {
                 >
                   <div className="space-y-3">
                     {col.tasks.map((task) => (
-                      <SortableTask key={task.id} task={task} />
+                      <SortableTask key={task.id} task={task} onEdit={openEditTask} onDelete={openDeleteTask} onView={openViewTask} />
                     ))}
                   </div>
                 </SortableContext>
@@ -1209,6 +1318,141 @@ function handleMoveAllCards(fromColumnId: string, toColumnIdx: number) {
         </DialogContent>
       </Dialog>
 
+      {/* Dialog - Edit Task */}
+      <Dialog open={isEditingTaskOpen} onOpenChange={setIsEditingTaskOpen}>
+        <DialogContent className="w-[95vw] max-w-[480px] mx-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Task</DialogTitle>
+            <p className="text-sm text-gray-600">Update task details</p>
+          </DialogHeader>
+          <form className="space-y-4" onSubmit={handleUpdateTask}>
+            <div className="space-y-2">
+              <Label>Title *</Label>
+              <Input value={editTitle} onChange={e => setEditTitle(e.target.value)} required />
+            </div>
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Textarea value={editDescription} onChange={e => setEditDescription(e.target.value)} rows={3} />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <Label>Assignee</Label>
+                <Input value={editAssignee} onChange={e => setEditAssignee(e.target.value)} />
+              </div>
+              <div>
+                <Label>Due date</Label>
+                <Input type="date" value={editDueDate} onChange={e => setEditDueDate(e.target.value)} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Priority</Label>
+              <Select value={editPriority} onValueChange={(v) => setEditPriority(v as any)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" type="button" onClick={() => setIsEditingTaskOpen(false)}>Cancel</Button>
+              <Button type="submit">Save</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog - View Task */}
+      <Dialog open={isViewingTaskOpen} onOpenChange={setIsViewingTaskOpen}>
+        <DialogContent className="w-[95vw] max-w-5xl h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between gap-2">
+              <span className="truncate">{viewingTask?.title ?? "Task"}</span>
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="outline" onClick={() => { if (viewingTask) { openEditTask(viewingTask); setIsViewingTaskOpen(false); } }}>Edit</Button>
+                <Button size="sm" variant="destructive" onClick={() => { if (viewingTask) { openDeleteTask(viewingTask); setIsViewingTaskOpen(false); } }}>Delete</Button>
+              </div>
+            </DialogTitle>
+            <p className="text-sm text-gray-600">Full view</p>
+          </DialogHeader>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="lg:col-span-2 space-y-4">
+              <section className="space-y-2">
+                <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Description</h4>
+                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                  {viewingTask?.description || "No description provided."}
+                </p>
+              </section>
+
+              {Array.isArray(viewingTask?.checklist) && viewingTask!.checklist.length > 0 && (
+                <section className="space-y-3">
+                  <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Checklist</h4>
+                  <div className="space-y-2">
+                    {viewingTask!.checklist.map((c, i) => (
+                      <div key={i} className="flex items-center gap-3">
+                        <input type="checkbox" checked={!!c.done} readOnly className="h-4 w-4 rounded border-gray-300" />
+                        <span className={`text-sm ${c.done ? "line-through text-gray-500" : "text-gray-800 dark:text-gray-200"}`}>{c.text}</span>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+            </div>
+
+            <div className="space-y-4">
+              <section className="space-y-2">
+                <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Details</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-500">Assignee</span>
+                    <span className="text-gray-800 dark:text-gray-200">{viewingTask?.assignee ?? "Unassigned"}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-500">Due date</span>
+                    <span className="text-gray-800 dark:text-gray-200">{viewingTask?.due_date ? new Date(viewingTask.due_date).toLocaleString() : "None"}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-500">Priority</span>
+                    {viewingTask && <PriorityPill p={viewingTask.priority} />}
+                  </div>
+                </div>
+              </section>
+
+              {Array.isArray(viewingTask?.labels) && viewingTask!.labels.length > 0 && (
+                <section className="space-y-2">
+                  <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Labels</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {viewingTask!.labels.map((label, i) => (
+                      <span key={i} className={`inline-flex items-center gap-2 px-2 py-1 rounded-full text-xs font-medium ${label.color} text-white`}>{label.name}</span>
+                    ))}
+                  </div>
+                </section>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog - Delete Task */}
+      <Dialog open={isDeletingTaskOpen} onOpenChange={setIsDeletingTaskOpen}>
+        <DialogContent className="w-[95vw] max-w-[420px] mx-auto">
+          <DialogHeader>
+            <DialogTitle>Delete Task</DialogTitle>
+            <p className="text-sm text-gray-600">This action cannot be undone. Delete this task permanently?</p>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setIsDeletingTaskOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDeleteTask} disabled={deleteTaskLoading}>
+              {deleteTaskLoading ? "Deleting..." : "Delete"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Dialog - Delete Column */}
       <Dialog open={!!deleteColumnId} onOpenChange={() => setDeleteColumnId(null)}>
         <DialogContent className="w-[95vw] max-w-[420px] mx-auto">
@@ -1245,88 +1489,83 @@ function handleMoveAllCards(fromColumnId: string, toColumnIdx: number) {
           </DialogHeader>
 
           <div className="space-y-6">
-            {/* Archived Lists */}
-            {archivedColumns.length > 0 && (
-              <div>
-                <h4 className="text-md font-medium text-gray-800 dark:text-gray-200 mb-4">Archived Lists ({archivedColumns.length})</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {archivedColumns.map((column) => (
-                    <Card key={column.id} className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <div>
-                            <h5 className="font-medium text-gray-900 dark:text-white">{column.title}</h5>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                              {column.tasks.length} tasks
-                            </p>
+            {loadingArchived && (
+              <div className="text-center py-6 text-sm text-gray-500">Loading archived items...</div>
+            )}
+
+            <div className="flex items-center justify-center gap-2">
+              <button
+                className={`px-4 py-2 rounded-full text-sm font-medium ${archiveCategory === "lists" ? "bg-indigo-600 text-white" : "bg-white/60 dark:bg-gray-800 text-gray-700 dark:text-gray-300"}`}
+                onClick={() => setArchiveCategory("lists")}
+              >
+                Lists ({archivedColumns.length})
+              </button>
+              <button
+                className={`px-4 py-2 rounded-full text-sm font-medium ${archiveCategory === "cards" ? "bg-indigo-600 text-white" : "bg-white/60 dark:bg-gray-800 text-gray-700 dark:text-gray-300"}`}
+                onClick={() => setArchiveCategory("cards")}
+              >
+                Cards ({archivedTasks.length})
+              </button>
+            </div>
+
+            {archiveCategory === "lists" ? (
+              archivedColumns.length > 0 ? (
+                <div>
+                  <h4 className="text-md font-medium text-gray-800 dark:text-gray-200 mb-4">Archived Lists ({archivedColumns.length})</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {archivedColumns.map((column) => (
+                      <Card key={column.id} className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <div>
+                              <h5 className="font-medium text-gray-900 dark:text-white">{column.title}</h5>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">{column.tasks.length} tasks</p>
+                            </div>
+                            <Badge variant="secondary" className="text-xs">Archived</Badge>
                           </div>
-                          <Badge variant="secondary" className="text-xs">Archived</Badge>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => restoreColumn(column.id)}
-                            className="flex-1"
-                          >
-                            Restore
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => setDeleteColumnId(column.id)}
-                            className="flex-1"
-                          >
-                            Delete
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="outline" onClick={() => restoreColumn(column.id)} className="flex-1">Restore</Button>
+                            <Button size="sm" variant="destructive" onClick={() => setDeleteColumnId(column.id)} className="flex-1">Delete</Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
-
-            {/* Archived Tasks */}
-            {archivedTasks.length > 0 && (
-              <div>
-                <h4 className="text-md font-medium text-gray-800 dark:text-gray-200 mb-4">Archived Tasks ({archivedTasks.length})</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {archivedTasks.map((task) => (
-                    <Card key={task.id} className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                      <CardContent className="p-4">
-                        <div className="mb-3">
-                          <h5 className="font-medium text-gray-900 dark:text-white text-sm mb-1">{task.title}</h5>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
-                            {task.description || "No description"}
-                          </p>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => restoreTask(task.id)}
-                            className="flex-1 text-xs"
-                          >
-                            Restore
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+              ) : (
+                <div className="text-center py-12">
+                  <Archive className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                  <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No Archived Lists</h4>
+                  <p className="text-gray-600 dark:text-gray-400">Archived lists will appear here for restoration.</p>
                 </div>
-              </div>
-            )}
-
-            {/* Empty State */}
-            {archivedColumns.length === 0 && archivedTasks.length === 0 && (
-              <div className="text-center py-12">
-                <Archive className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No Archived Items</h4>
-                <p className="text-gray-600 dark:text-gray-400">
-                  When you archive lists or tasks, they will appear here for easy restoration.
-                </p>
-              </div>
+              )
+            ) : (
+              archivedTasks.length > 0 ? (
+                <div>
+                  <h4 className="text-md font-medium text-gray-800 dark:text-gray-200 mb-4">Archived Cards ({archivedTasks.length})</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {archivedTasks.map((task) => (
+                      <Card key={task.id} className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                        <CardContent className="p-4">
+                          <div className="mb-3">
+                            <h5 className="font-medium text-gray-900 dark:text-white text-sm mb-1">{task.title}</h5>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">{task.description || "No description"}</p>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="outline" onClick={() => restoreTask(task.id)} className="flex-1 text-xs">Restore</Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <Archive className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                  <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No Archived Cards</h4>
+                  <p className="text-gray-600 dark:text-gray-400">Archived cards will appear here for restoration.</p>
+                </div>
+              )
             )}
           </div>
         </DialogContent>
